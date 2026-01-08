@@ -17,6 +17,14 @@ MODULE module_cu_gfl
 !                                                                             !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+ use ccpp_kind_types,  only : kind_phys
+ use module_cu_gfl_deep, only: cu_gfl_deep_run,neg_check
+ use module_cu_gfl_sh,   only: cu_gfl_sh_run
+
+ implicit none
+ private
+ public:: cu_grell_freitas_li
+
 CONTAINS
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -38,10 +46,6 @@ CONTAINS
               ,ids, ide, jds, jde, kds,kde                      &
               ,its, ite, jts, jte, kts,kte)
 
-      use module_cu_gfl_common, only : kind_phys
-      use module_cu_gfl_deep, only: cu_gfl_deep_run,neg_check
-      use module_cu_gfl_sh,   only: cu_gfl_sh_run
- implicit none
 
 !-----------------------------------------------------------------------------------------------------------------
 
