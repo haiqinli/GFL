@@ -1,4 +1,4 @@
-!MPAS:MODEL_LAYER:PHYSICS
+!WRF:MODEL_LAYER:PHYSICS
 !
 
 MODULE module_cu_gfl
@@ -7,47 +7,41 @@ MODULE module_cu_gfl
 !                                                                             !
 ! Grell, G.A. and Freitas, S.R.: A scale and aerosol aware stochastic         !
 !        convective parameterization for weather and air quality modeling,    !
-!        Atmos. Chem. Phys., 14, 5233–5250, 2014.                             !
+!        Atmos. Chem. Phys., 14, 5233~5250, 2014.                             !
 !                                                                             !
-! Freitas, S.R., Grell, G.A., and Li, H.: The Grell–Freitas (GF) convection   !
+! Freitas, S.R., Grell, G.A., and Li, H.: The Grell-Freitas (GF) convection   !
 !        parameterization: recent developments, extensions, and applications, !
-!        Geosci. Model Dev., 14, 5393–5411, 2021.                             !
+!        Geosci. Model Dev., 14, 5393-5411, 2021.                             !
 !                                                                             !
 ! Contact: Haiqin Li (haiqin.li@noaa.gov)                                     !
 !                                                                             !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- use mpas_kind_types,only: kind_phys => RKIND
- use mpas_log
-
- use module_cu_gfl_deep, only: cu_gfl_deep_run,neg_check
- use module_cu_gfl_sh,   only: cu_gfl_sh_run
-
- implicit none
- private
- public:: cu_grell_freitas_li
 
 CONTAINS
 
 !-----------------------------------------------------------------------------------------------------------------
 
  subroutine cu_grell_freitas_li(                                &
-               itimestep,dt,dxcell,areacell                     &
+               itimestep,dt,dxcell                     &
               ,u,v,w,t,q,rho,p,pi,p8w,dz8w                      &
               ,ht,xland,hfx,qfx,gsw,rqvften,rthften             &
               ,rthblten,rqvblten,rthraten,kpbl,xlv,cp,g,r_v     &
-              ,ichoice_deep,ichoice_shallow,ishallow_g3         &
+              ,ichoice_deep,ishallow_g3         &
               ,htop,hbot,k22_shallow,kbcon_shallow,ktop_shallow &
-              ,xmb_total,xmb_shallow,raincv,pratec,gdc,gdc2     &
+              ,xmb_shallow,raincv,pratec,gdc,gdc2     &
               ,rthcuten,rqvcuten,rqccuten,rqicuten              &
-              ,rucuten,rvcuten,bilbc,sub3d                      &
-              ,pbl_scheme, maxmf, qc3d, qi3d                    &
+              ,rucuten,rvcuten                                  &
+#if ( WRF_CHEM == 1 )
               ,num_chem, chem3d_in                              &
-              ,qc_cu, qi_cu, cldfrac_cu, vcpool ,sig_deep       &
-              ,sig_deep_far,sub3d_rthcuten,sub3d_rqvcuten       &
-              ,sub3d_rucuten,sub3d_rvcuten,rainncv,refl10cm_cu  &
+#endif
               ,ims, ime, jms, jme, kms,kme                      &
               ,ids, ide, jds, jde, kds,kde                      &
               ,its, ite, jts, jte, kts,kte)
+
+      use module_cu_gfl_common, only : kind_phys
+      use module_cu_gfl_deep, only: cu_gfl_deep_run,neg_check
+      use module_cu_gfl_sh,   only: cu_gfl_sh_run
+ implicit none
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -70,40 +64,34 @@ CONTAINS
                       ims,ime,jms,jme,kms,kme, & 
                       its,ite,jts,jte,kts,kte
 
- integer,intent(in):: sub3d,ichoice_deep,ichoice_shallow,itimestep
+ integer,intent(in):: ichoice_deep,itimestep
  integer,intent(in):: ishallow_g3
 
- integer,dimension(ims:ime,jms:jme ),intent(in):: kpbl,bilbc
+ integer,dimension(ims:ime,jms:jme ),intent(in):: kpbl
 
  real(kind=kind_phys),intent(in):: dt
  real(kind=kind_phys),intent(in):: xlv,r_v,cp,g
- real(kind=kind_phys),dimension(ims:ime,jms:jme),intent(in):: areaCell,dxCell
- real(kind=kind_phys),dimension(ims:ime,jms:jme),intent(in):: hfx,qfx,gsw,ht,xland,maxmf,rainncv
+ real(kind=kind_phys),intent(in):: dxCell
+ real(kind=kind_phys),dimension(ims:ime,jms:jme),intent(in):: hfx,qfx,gsw,ht,xland
 
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(in):: u,v,w,p,pi,q,rho,t
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(in):: dz8w,p8w
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(in):: rqvblten,rthblten,rthraten
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(in),optional:: rthften,rqvften
- real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(inout):: qc3d,qi3d
- real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(inout):: sub3d_rthcuten        &
-                                                        ,sub3d_rqvcuten        &
-                                                        ,sub3d_rucuten         &
-                                                        ,sub3d_rvcuten
 
- character(*),intent(in):: pbl_scheme
 
 
 !inout arguments:
  integer,dimension(ims:ime,jms:jme),intent(inout):: k22_shallow,kbcon_shallow,ktop_shallow
 
- real(kind=kind_phys),dimension(ims:ime,jms:jme),intent(inout):: hbot,htop,raincv,pratec,xmb_total,xmb_shallow  &
-                                                ,vcpool,sig_deep,sig_deep_far
+ real(kind=kind_phys),dimension(ims:ime,jms:jme),intent(inout):: hbot,htop,raincv,pratec,xmb_shallow
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(inout):: rthcuten,rqvcuten,rqccuten,rqicuten
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(inout):: rucuten,rvcuten
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(inout),optional:: gdc,gdc2
- real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme),intent(inout):: qc_cu,qi_cu,cldfrac_cu,refl10cm_cu
+#if ( WRF_CHEM == 1 )
  integer,intent(in) :: num_chem
  real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme,1:num_chem),intent(inout),optional :: chem3d_in
+#endif
 
 !local variables:
  character(len=50),dimension(its:ite):: ierrc,ierrcm
@@ -112,6 +100,14 @@ CONTAINS
  integer:: i,j,k,n
  integer:: ipr,jpr
  integer:: itf,jtf,ktf
+
+ integer:: sub3d=0
+ integer,dimension(ims:ime,jms:jme ):: bilbc
+ real(kind=kind_phys),dimension(ims:ime,jms:jme):: xmb_total
+ real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme):: sub3d_rthcuten,sub3d_rqvcuten,sub3d_rucuten,sub3d_rvcuten
+ real(kind=kind_phys),dimension(ims:ime,jms:jme):: vcpool,sig_deep,sig_deep_far
+ real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme):: qc_cu,qi_cu,cldfrac_cu,refl10cm_cu
+ real(kind=kind_phys),dimension(ims:ime,kms:kme,jms:jme):: qc3d,qi3d
 
  integer,dimension(its:ite):: ierr,ierrs,ierrm
  integer,dimension(its:ite):: kpbli
@@ -141,9 +137,15 @@ CONTAINS
  integer, parameter:: nchem = 1, nranflag = 0, do_capsuppress = 0, dicycle = 0
  logical :: do_smoke_transport
  integer :: imid,ishallow,ktopmax,kbconmax
+#if ( WRF_CHEM == 1 )
  real(kind=kind_phys),dimension(its:ite,kts:kte,num_chem)::chem3d
  real(kind=kind_phys),dimension(num_chem)::fscav
  real(kind=kind_phys),dimension(its:ite,num_chem)::wetdpc_deep,wetdpc_mid
+#else
+ real(kind=kind_phys),dimension(its:ite,kts:kte,nchem)::chem3d
+ real(kind=kind_phys),dimension(nchem)::fscav
+ real(kind=kind_phys),dimension(its:ite,nchem)::wetdpc_deep,wetdpc_mid
+#endif
  real(kind=kind_phys),dimension (its:ite)         :: cap_suppress_j,rand_mom,rand_vmas
  integer,  dimension (its:ite) :: csum,csum_m
  real(kind=kind_phys),dimension (its:ite,4)       :: rand_clos
@@ -169,12 +171,13 @@ CONTAINS
  mc_thresh(:)=0.
  f_thresh(:)=0.
  fm_thresh(:)=0.
- if (trim(pbl_scheme)=="bl_mynn") ishallow = 0
+ bilbc=0
+ do_smoke_transport = .false.
+#if ( WRF_CHEM == 1 )
  if (num_chem .gt. 0) then
      do_smoke_transport = .true.
- else
-     do_smoke_transport = .false.
  endif
+#endif
  ishallow=0
  rain_thresh=0. ! (mm/hr)
  do j = jts, jte
@@ -254,7 +257,7 @@ CONTAINS
        xmb_dumm(i) = 0.
     enddo
     do i = its, itf
-       dx_loc(i)   = dxCell(i,j)
+       dx_loc(i)   = dxCell
        !if(sub3d == 1 )mc_thresh(i)=3.25/dx_loc(i)
        mc_thresh(i)=0.0
        f_thresh(i)=0.9
@@ -263,7 +266,7 @@ CONTAINS
        !
        if(total_time < 5400.)f_thresh(i) = min(1.,(1. - (total_time/5400. -1.)**2))*f_thresh(i)
        f_thresh(i) = 0.
-       area_loc(i) = areaCell(i,j)
+       area_loc(i) = dxCell**2
        ter11(i)    = max(0.,ht(i,j))
        zo(i,kts)   = ter11(i) + 0.5*dz8w(i,1,j)
        do k = kts+1, ktf
@@ -340,11 +343,13 @@ CONTAINS
           subtenm_t(i,k)=0.
           subtenm_u(i,k)=0.
           subtenm_v(i,k)=0.
+#if ( WRF_CHEM == 1 )
           if ( num_chem .gt. 0 ) then
             do n = 1,num_chem
                chem3d(i,k,n) = chem3d_in(i,k,j,n)
             enddo
           endif
+#endif
        enddo
     enddo
           subten_h(:,:)=0.
@@ -372,10 +377,6 @@ CONTAINS
                 ierrm(i)=42 
                 mconv(i) = 0.
           endif
-          !if(rainncv(i,j)/dt*3600. > rain_thresh .and. sub3d == 1 )then
-          !         ierr(i)=44
-          !endif
-       !   if((dx_loc(i)<6500.).and.(trim(pbl_scheme)=="bl_mynn").and.(maxmf(i,jts).gt.0.))ierr(i)=555
 ! fore regional domain, blend in tendencies in relaxation zone
           if(bilbc(i,j).eq.7)ierr(i)=556
           factor(i)=(6.-float(bilbc(i,j)))/7.+1./7.
@@ -521,7 +522,11 @@ CONTAINS
               ,frhm_far      &
               ,ierrm         &
               ,ierrcm        &
+#if ( WRF_CHEM == 1 )
               ,num_chem      &
+#else
+              ,nchem         &
+#endif
               ,fscav         &
               ,chem3d        &
               ,wetdpc_mid    &
@@ -610,7 +615,11 @@ CONTAINS
               ,frh_out_far   &  ! fractional coverage
               ,ierr          &  ! ierr flags are error flags, used for debugging
               ,ierrc         &  ! the following should be set to zero if not available
+#if ( WRF_CHEM == 1 )
               ,num_chem      &
+#else
+              ,nchem         &
+#endif
               ,fscav         &
               ,chem3d        &
               ,wetdpc_deep   &
@@ -671,7 +680,8 @@ CONTAINS
         do i = its, ite
            rain_thresh = 5. * (1.-frh_out(i))
            if(rain_thresh <= 2.5) rain_thresh = 0.
-           if(ierr(i) == 0 .and. rainncv(i,j)/dt*3600. > rain_thresh .and. sub3d == 1 )then
+           !if(ierr(i) == 0 .and. rainncv(i,j)/dt*3600. > rain_thresh .and. sub3d == 1 )then
+           if(ierr(i) == 0 .and. sub3d == 1 )then
                     ierr(i)=44
                     pret(i)=0.
                     sig_deep(i,j)=0.
@@ -724,11 +734,13 @@ CONTAINS
              qc_cu(i,k,j)=factor(i)*gdc(i,k,j)
           endif
 
+#if ( WRF_CHEM == 1 )
           if (num_chem .gt. 0 ) then
              do n = 1,num_chem
                 chem3d_in(i,k,j,n) = chem3d(i,k,n)
              enddo
           endif
+#endif
        enddo
     enddo
 

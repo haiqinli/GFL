@@ -6,17 +6,22 @@ dummy:
 	echo "****** compiling GFL_physics ******"
 
 OBJS = \
-	module_cu_gfl_mpas.o       \
+	module_cu_gfl_common.o  \
+	module_cu_gfl_mpas.o \
 	module_cu_gfl_deep.o \
 	module_cu_gfl_sh.o
 
 # DEPENDENCIES:
+module_cu_gfl_common.o: \
+	../../mpas_atmphys_constants.o
 module_cu_gfl_mpas.o: \
 	module_cu_gfl_deep.o \
-	module_cu_gfl_sh.o
+	module_cu_gfl_sh.o \
+	module_cu_gfl_common.o
 
 module_cu_gfl_sh.o: \
-	module_cu_gfl_deep.o
+	module_cu_gfl_deep.o \
+	module_cu_gfl_common.o
 
 GFL_physics: $(OBJS)
 	ar -ru ./../../libphys.a $(OBJS)

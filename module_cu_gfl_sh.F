@@ -2,9 +2,7 @@
 !! This file contains Grell-Freitas-Li shallow convection scheme.
 
 module module_cu_gfl_sh
-!    use machine , only : kind_phys
-!    use ccpp_kinds,only: kind_phys
-     use mpas_kind_types,only: kind_phys => RKIND
+    use module_cu_gfl_common, only : kind_phys
     !real(kind=kind_phys), parameter:: c1_shal=0.0015! .0005
     real(kind=kind_phys), parameter:: c1_shal=0. !0.005! .0005
     real(kind=kind_phys), parameter:: g  =9.81
