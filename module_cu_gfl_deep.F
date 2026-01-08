@@ -3,9 +3,7 @@
 MODULE module_cu_gfl_deep
      !use machine , only : kind_phys
      !use physcons, only : qamin
-!     integer, parameter :: kind_phys=4
-     use mpas_kind_types,only: kind_phys => RKIND
-     !use ccpp_kinds,only: kind_phys
+     use module_cu_gfl_common, only : kind_phys
      real(kind=kind_phys), parameter:: qamin=1.e-32
      real(kind=kind_phys), parameter:: g=9.81
      real(kind=kind_phys), parameter:: cp=1004.
@@ -6128,6 +6126,7 @@ endif
 ! mass budget
                dellac(i,k) =dellac(i,k) + (detup+detdo-entdo-entup-entdoj)*g/dp
           enddo
+               dp=100.*(po_cup(i,ktop(i))-po_cup(i,ktop(i)+1))
                dellac(i,ktop(i))=zuo(i,ktop(i))*tracer_up(i,ktop(i))*g/dp
        enddo ! i
   end subroutine dellas_nosub
