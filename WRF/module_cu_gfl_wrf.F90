@@ -177,6 +177,8 @@ CONTAINS
  fm_thresh(:)=0.
  bilbc=0
  do_smoke_transport = .false.
+ qc3d=0.
+ qi3d=0.
 #if ( WRF_CHEM == 1 )
  if (num_chem .gt. 0) then
      do_smoke_transport = .true.
@@ -745,17 +747,17 @@ CONTAINS
 
  !-- take care of the j-dimension
  !--- coupling to radiation
-      call calc_cldfraction_monan(cldfrac_cu, q, qc3d, qi3d,            &
-     &                 p,t,rho,xland,ht,kpbl,gf_mfx,dz8w,               &
-     &                 ids,ide, jds,jde, kds,kde,                       &
-     &                 ims,ime, jms,jme, kms,kme,                       &
-     &                 its,ite, jts,jte, kts,kte                        )
+!      call calc_cldfraction_monan(cldfrac_cu, q, qc3d, qi3d,            &
+!     &                 p,t,rho,xland,ht,kpbl,gf_mfx,dz8w,               &
+!     &                 ids,ide, jds,jde, kds,kde,                       &
+!     &                 ims,ime, jms,jme, kms,kme,                       &
+!     &                 its,ite, jts,jte, kts,kte                        )
 
  !-- convection contribution to radar reflectivity
-      call calc_cu_reflectivity(g,dt,raincv,ht,t,htop,dz8w,refl10cm_cu, &
-     &                 ids,ide, jds,jde, kds,kde,                       &
-     &                 ims,ime, jms,jme, kms,kme,                       &
-                       its,ite, jts,jte, kts,kte                        )
+!      call calc_cu_reflectivity(g,dt,raincv,ht,t,htop,dz8w,refl10cm_cu, &
+!     &                 ids,ide, jds,jde, kds,kde,                       &
+!     &                 ims,ime, jms,jme, kms,kme,                       &
+!                       its,ite, jts,jte, kts,kte                        )
 
  end subroutine cu_grell_freitas_li
 
