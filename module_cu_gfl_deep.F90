@@ -4221,6 +4221,7 @@ endif
         ,intent (in  )                   ::                                   &
         dt
      real(kind=kind_phys) :: names,scalef,thresh,qmem,qmemf,qmem2,qtest,qmem1
+     integer :: i,k
      integer :: icheck
 !
 ! first do check on vertical heating rate
